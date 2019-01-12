@@ -6,10 +6,14 @@ import matplotlib.pyplot as plt
 import string
 import random
 
+
+# Reverses the order of channel 3.
+# RGB to BGR or BGR to RGB
 def flip_channel_3(image):
     return image[...,::-1]
 
 
+# Loads a number of images from the vggface2 dataset
 def load_images(image_quantity):
     path = '../data/vggface2/test/'
 
@@ -33,6 +37,10 @@ def load_images(image_quantity):
                 return images
 
 
+# Detects the faces in the photo using Haar cascade.
+# If more than one face exists, it is discarded.
+# Checks if the cropped face image will fit within the bounds of a bin.
+# Returns success_value, bounding_box_coordinates, bin_number
 def face_check(img, bins):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -54,15 +62,7 @@ def face_check(img, bins):
     return (0, None, None)
 
 
-def count_images(path):
-    directories = os.listdir(path)
-    count = 0
-    for directory in directories:
-        files = os.listdir(path + directory)
-        count += len(files)
-    return count
-
-
+# Adjusts the scale of the bounding box to desired height and width dimensions
 def scale_adjustment(x, y, w_c, h_c, w_d, h_d):
     delta_h = h_d - h_c
     delta_w = w_d - w_c
@@ -76,6 +76,7 @@ def scale_adjustment(x, y, w_c, h_c, w_d, h_d):
     return (x, y, w_d, h_d)
 
 
+# Translates crop bounding box to eliminate overflow
 def crop_realign(x, y, w_c, h_c, w_i, h_i):
     if(x + w_c > w_i):
         diff = x + w_c - w_i
@@ -119,6 +120,11 @@ def create_bins(lower, upper, interval):
     return bins
 
 
+# Inspects images at a given source path.
+# Looks for faces within each image.
+# Sorts the images into the proper bin if face is detected.
+# Crops image to face bounding box.
+# Saves image to destination path.
 def collect_and_save_images(source_path, dest_path, image_quantity, bins):
 
     print("Inspecting %d images..." % image_quantity)
