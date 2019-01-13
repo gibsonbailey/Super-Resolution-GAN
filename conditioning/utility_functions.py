@@ -144,7 +144,6 @@ def collect_and_save_images(source_path, dest_path, image_quantity, bins):
     for i, sub in enumerate(subjects):
         for j, filename in enumerate(os.listdir(source_path + sub)):
             image = cv2.imread(source_path + sub + "/" + filename)
-            image = flip_channel_3(image)
             
             prog_count += 1
             
