@@ -1,8 +1,7 @@
 source_directory = ../data/vggface2/test/
-destination_directory = ../data/conditioned_faces_test/
-quantity = 100
+destination_directory = ../data/conditioned_faces/
+quantity = 100000
 
-35, 25, 39
 55, 40, 59
 70, 60, 74
 86, 75, 89
