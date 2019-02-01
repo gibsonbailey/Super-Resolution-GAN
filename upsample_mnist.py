@@ -18,9 +18,6 @@ def reduce_resolution(ims):
     NL = N // L
     return ims.reshape(-1, MK, K, NL, L).mean(axis=(2, 4)).reshape(O, MK, NL, P)
 
-def upsize(ims):
-    return ims.repeat(2, axis = 1).repeat(2, axis = 2)
-
 if __name__ == "__main__":
 	(X_train, _), (_, _) = mnist.load_data()
 	X_train = np.reshape(X_train, (-1, 28, 28, 1))/255
