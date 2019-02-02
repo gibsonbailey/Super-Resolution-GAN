@@ -1,0 +1,280 @@
+--------------------------------------------------
+Sample key-word args 0:
+    transpose_conv=True
+    num_filters=16
+    kernel_size=5
+    strides=5
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='relu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model0.png
+==================================================
+--------------------------------------------------
+Sample key-word args 1:
+    transpose_conv=False
+    num_filters=2
+    kernel_size=5
+    strides=3
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='leaky_relu'
+    batch_normalization=False
+    conv_first=True
+
+Saving as model1.png
+==================================================
+--------------------------------------------------
+Sample key-word args 2:
+    transpose_conv=False
+    num_filters=16
+    kernel_size=4
+    strides=4
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a668>
+    activation='tanh'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model2.png
+==================================================
+--------------------------------------------------
+Sample key-word args 3:
+    transpose_conv=True
+    num_filters=16
+    kernel_size=5
+    strides=4
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a668>
+    activation='leaky_relu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model3.png
+==================================================
+--------------------------------------------------
+Sample key-word args 4:
+    transpose_conv=False
+    num_filters=64
+    kernel_size=1
+    strides=4
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a550>
+    activation='tanh'
+    batch_normalization=False
+    conv_first=False
+
+Saving as model4.png
+==================================================
+--------------------------------------------------
+Sample key-word args 5:
+    transpose_conv=False
+    num_filters=32
+    kernel_size=2
+    strides=5
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a550>
+    activation='relu'
+    batch_normalization=False
+    conv_first=False
+
+Saving as model5.png
+==================================================
+--------------------------------------------------
+Sample key-word args 6:
+    transpose_conv=False
+    num_filters=16
+    kernel_size=3
+    strides=2
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='elu'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model6.png
+==================================================
+--------------------------------------------------
+Sample key-word args 7:
+    transpose_conv=True
+    num_filters=3
+    kernel_size=3
+    strides=5
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a550>
+    activation='elu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model7.png
+==================================================
+--------------------------------------------------
+Sample key-word args 8:
+    transpose_conv=True
+    num_filters=64
+    kernel_size=4
+    strides=5
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a668>
+    activation='leaky_relu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model8.png
+==================================================
+--------------------------------------------------
+Sample key-word args 9:
+    transpose_conv=True
+    num_filters=2
+    kernel_size=2
+    strides=1
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='leaky_relu'
+    batch_normalization=False
+    conv_first=True
+
+Saving as model9.png
+==================================================
+--------------------------------------------------
+Sample key-word args 10:
+    transpose_conv=False
+    num_filters=16
+    kernel_size=5
+    strides=1
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='relu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model10.png
+==================================================
+--------------------------------------------------
+Sample key-word args 11:
+    transpose_conv=False
+    num_filters=2
+    kernel_size=3
+    strides=2
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='relu'
+    batch_normalization=False
+    conv_first=True
+
+Saving as model11.png
+==================================================
+--------------------------------------------------
+Sample key-word args 12:
+    transpose_conv=False
+    num_filters=2
+    kernel_size=2
+    strides=5
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a550>
+    activation='tanh'
+    batch_normalization=False
+    conv_first=False
+
+Saving as model12.png
+==================================================
+--------------------------------------------------
+Sample key-word args 13:
+    transpose_conv=False
+    num_filters=2
+    kernel_size=3
+    strides=4
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='relu'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model13.png
+==================================================
+--------------------------------------------------
+Sample key-word args 14:
+    transpose_conv=True
+    num_filters=16
+    kernel_size=2
+    strides=3
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a550>
+    activation='tanh'
+    batch_normalization=False
+    conv_first=False
+
+Saving as model14.png
+==================================================
+--------------------------------------------------
+Sample key-word args 15:
+    transpose_conv=False
+    num_filters=3
+    kernel_size=4
+    strides=2
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a668>
+    activation='elu'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model15.png
+==================================================
+--------------------------------------------------
+Sample key-word args 16:
+    transpose_conv=True
+    num_filters=64
+    kernel_size=2
+    strides=3
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='elu'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model16.png
+==================================================
+--------------------------------------------------
+Sample key-word args 17:
+    transpose_conv=False
+    num_filters=32
+    kernel_size=1
+    strides=3
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='leaky_relu'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model17.png
+==================================================
+--------------------------------------------------
+Sample key-word args 18:
+    transpose_conv=False
+    num_filters=1
+    kernel_size=5
+    strides=4
+    kernel_initializer='he_normal'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a588>
+    activation='relu'
+    batch_normalization=True
+    conv_first=False
+
+Saving as model18.png
+==================================================
+--------------------------------------------------
+Sample key-word args 19:
+    transpose_conv=True
+    num_filters=16
+    kernel_size=2
+    strides=1
+    kernel_initializer='glorot_uniform'
+    kernel_regularizer=<keras.regularizers.L1L2 object at 0x7f41e1b3a668>
+    activation='tanh'
+    batch_normalization=True
+    conv_first=True
+
+Saving as model19.png
+==================================================
