@@ -13,6 +13,7 @@ def unet_cell(inputs,
               num_filters=16,
               kernel_size=3,
               strides=1,
+              padding='same', # Be careful modifying this default
               kernel_initializer='glorot_uniform',
               kernel_regularizer=None,
               activation='leaky_relu',
@@ -28,6 +29,7 @@ def unet_cell(inputs,
         num_filters (int): number of filters used by Conv2D
         kernel_size (int): square kernel dimension
         strides (int): square stride dimension
+        padding (str): one of 'same' or 'valid'
         kernel_initializer (string): method used to initialize kernel
         kernel_regularizer (keras.regularizers.Regularizer): 
             method used to constrain (regularize) kernel values or None
@@ -53,14 +55,14 @@ def unet_cell(inputs,
         conv = Conv2DTranspose(num_filters,
                                kernel_size=kernel_size, # TODO: Check what kernel_size, strides to use
                                strides=strides,
-                               padding='same',
+                               padding=padding,
                                kernel_initializer=kernel_initializer,
                                kernel_regularizer=kernel_regularizer)
     else:
         conv = Conv2D(num_filters,
                       kernel_size=kernel_size,
                       strides=strides,
-                      padding='same', # This is not optional for our Unet.
+                      padding=padding, # This is not optional for our Unet.
                       kernel_initializer=kernel_initializer,
                       kernel_regularizer=kernel_regularizer)
 

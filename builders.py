@@ -1,9 +1,13 @@
 from keras.models import Model
 from keras.layers import Input, Conv2D, UpSampling2D, Conv2DTranspose
 from keras.layers import GlobalAveragePooling2D, MaxPooling2D, concatenate
-from keras.layers import LeakyReLU, BatchNormalization, Dense, Activation, Reshape
+from keras.layers import LeakyReLU, BatchNormalization, Dense, Activation
+from keras.layers import Lambda, Reshape
 
-from typing import List # Type hints requires Python >= 3.5
+from typing import Tuple, List # Type hints requires Python >= 3.5
+from functools import partial
+from tensorflow.image import resize_bilinear, resize_bicubic
+from tensorflow.image import resize_nearest_neighbor
 
 # Local imports
 from unet import unet_cell, LEAKY_RELU_ALPHA, BATCH_NORM_MOMENTUM
@@ -101,6 +105,88 @@ def build_upscaler(inputs, # TODO: What type is this?
 
     model = Model(inputs=inputs, outputs=x)
     return model
+
+def build_upscaler_v2(inputs, output_size: Tuple[int, int],
+                      resize_method: str='bilinear',
+                      align_corners: bool=True,
+                      num_filters_in_layer: List[int]=[16, 32, 64, 16],
+                      num_cells_in_layer: List[int]=[3, 3, 3, 4],
+                      bottleneck_before_concat: bool=True):
+    """Upscaler with encoder that contains strictly 'valid' convolutions
+       and with decoder that bilinearly or bicubically resizes prior
+       layers, concatenates, then applies 'same' convolution.
+
+    # Arguments
+
+    # Returns
+    """
+
+    # Validate arguments
+    if len(num_filters_in_layer) != len(num_cells_in_layer):
+        raise ValueError("Size mismatch: len(num_filters_in_layer) must "
+                         "equal len(num_cells_in_layer) but received "
+                         "({}, {})".format(len(num_filters_in_layer), 
+                                           len(num_cells_in_layer)))
+    
+    # Determine which resizing function to use
+    rm = resize_method.lower()
+    if rm == 'bilinear':
+        resize_func = resize_bilinear
+    elif rm == 'bicubic':
+        resize_func = resize_bicubic
+    elif rm == 'nearest' or rm == 'nearest_neighbor':
+        resize_func = resize_nearest_neighbor
+    else:
+        raise ValueError("Unknown resize method: {}".format(resize_method))
+
+    # Define resizing layer:
+    resize_layer = Lambda(resize_func,
+                          arguments=dict(size=output_size,
+                                         align_corners=align_corners))
+
+    # Define valid convolution unet_cell
+    vc_cell = partial(unet_cell, padding='same')
+
+    x = inputs
+    carry_forward_tensors = []
+
+    # Encoder
+    for i, (num_filters, num_cells) in enumerate(zip(num_filters_in_layer[:-1],
+                                                   num_cells_in_layer[:-1])):
+                                                   # Last element used post-resize layer
+        if i == 0:
+            # First layer: no downsampling applied
+            for _ in range(num_cells):
+                x = vc_cell(x, num_filters=num_filters, kernel_size=2)
+        else:
+            # Remaining layers: downsample first
+            x = vc_cell(x, num_filters=num_filters, kernel_size=2, strides=2)
+            for _ in range(num_cells - 1):
+                x = vc_cell(x, num_filters=num_filters)
+        carry_forward_tensors.append(x)
+
+    # Resize carry_forward_tensors, then concatenate.
+    if bottleneck_before_concat:
+        n = num_filters_in_layer[-1] // len(carry_forward_tensors)
+        new_carry_forward_tensors = []
+        for tensor in carry_forward_tensors:
+            tensor = vc_cell(tensor, num_filters=n, kernel_size=1)
+            new_carry_forward_tensors.append(tensor)
+        carry_forward_tensors = new_carry_forward_tensors
+
+    x = concatenate(list(map(resize_layer, carry_forward_tensors)))
+
+    # Apply final convolutions to concatenated tensors
+    num_filters = num_filters_in_layer[-1]
+    num_cells = num_cells_in_layer[-1]
+    for _ in range(num_cells):
+        x = unet_cell(x, num_filters=num_filters)
+
+    # Output
+    n_channels = int(inputs.shape[-1])
+    x = Conv2D(n_channels, (1, 1), activation='sigmoid')(x)
+
+    return Model(inputs=inputs, outputs=x)
 
 # TODO: Test keras.applications (ResNet, Xception, etc.) as discriminators
 # Note: ResNet, Xception have *required* input dimensions larger than 
