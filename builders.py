@@ -6,8 +6,7 @@ from keras.layers import Lambda, Reshape
 
 from typing import Tuple, List # Type hints requires Python >= 3.5
 from functools import partial
-from tensorflow.image import resize_bilinear, resize_bicubic
-from tensorflow.image import resize_nearest_neighbor
+import tensorflow as tf
 
 # Local imports
 from unet import unet_cell, LEAKY_RELU_ALPHA, BATCH_NORM_MOMENTUM
@@ -131,11 +130,11 @@ def build_upscaler_v2(inputs, output_size: Tuple[int, int],
     # Determine which resizing function to use
     rm = resize_method.lower()
     if rm == 'bilinear':
-        resize_func = resize_bilinear
+        resize_func = tf.image.resize_bilinear
     elif rm == 'bicubic':
-        resize_func = resize_bicubic
+        resize_func = tf.image.resize_bicubic
     elif rm == 'nearest' or rm == 'nearest_neighbor':
-        resize_func = resize_nearest_neighbor
+        resize_func = tf.image.resize_nearest_neighbor
     else:
         raise ValueError("Unknown resize method: {}".format(resize_method))
 
