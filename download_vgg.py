@@ -7,8 +7,14 @@ FILE_URLS = [
     "http://zeus.robots.ox.ac.uk/vgg_face2/get_file?fname=vggface2_train.tar.gz",
     "http://zeus.robots.ox.ac.uk/vgg_face2/get_file?fname=vggface2_test.tar.gz",
     "http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/train_list.txt",
-    "http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/test_list.txt"
+    "http://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/test_list.txt",
+    "https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/identity_meta.csv",
+    "https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/class_overlap_vgg1_2.txt",
+    "https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/test_posetemp_imglist.txt",
+    "https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/test_agetemp_imglist.txt",
+    "https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/meta/bb_landmark.tar.gz"
 ]
+META_KEYWORD = 'meta'
 
 def get_filenames(urls):
     filenames = []
@@ -36,19 +42,28 @@ def get_file_choices(filenames, file_urls):
     for i, filename in enumerate(filenames):
         print(f"    [{i}]: {filename}")
     print(f"    [{len(filenames)}]: All files")
+    print(f"    [{META_KEYWORD}]: Meta files")
 
     choice = None
     while (choice == None):
         choice = input(">>> ")
-        try:
-            choice = int(choice)
-            if choice < 0 or choice > len(filenames):
-                print(f"Invalid choice: {choice}. Please try again.")
-        except ValueError:
-            print(f"Unrecognized input. Please try again.")
-            choice = None
+        if choice == META_KEYWORD:
+            continue
+        else: 
+            try:
+                choice = int(choice)
+                if choice < 0 or choice > len(filenames):
+                    print(f"Invalid choice: {choice}. Please try again.")
+            except ValueError:
+                print(f"Unrecognized input. Please try again.")
+                choice = None
 
-    if choice == len(filenames):
+    if choice == META_KEYWORD:
+        choices = []
+        for filename, file_url in zip(filenames, file_urls):
+            if META_KEYWORD in file_url:
+                choices.append((filename, file_url))
+    elif choice == len(filenames):
         choices = []
         for filename, file_url in zip(filenames, file_urls):
             choices.append((filename, file_url))
@@ -83,13 +98,17 @@ if __name__ == "__main__":
             r = session.get(file_url, data=credentials, stream=True)
 
             total_bytes = r.headers.get('content-length')
+            encoding = r.headers.get('content-encoding')
+            zipped = (encoding is not None and 'zip' in encoding)
             if total_bytes is None:
                 print(f"    Size: (not provided)")
+            elif zipped:
+                print(f"    Size: {total_bytes} bytes (compressed)")
             else:
-                print(f"    Size: {total_bytes}")
+                print(f"    Size: {total_bytes} bytes")
 
             try:
-                if total_bytes is None:
+                if total_bytes is None or zipped:
                     # Display number of megabytes downloaded so far.
                     bytes_written = 0
                     for data in r.iter_content(chunk_size=4096):
@@ -103,7 +122,7 @@ if __name__ == "__main__":
                     total_bytes = int(total_bytes)
                     bytes_written = 0
                     
-                    bar_lengh = 50
+                    bar_length = 50
                     write_str = "\r[{}]".format("{:" + str(bar_length) + "s}")
 
                     for data in r.iter_content(chunk_size=4096): # Chunk size?
