@@ -194,7 +194,9 @@ def build_upscaler_v2(inputs, output_size: Tuple[int, int],
 def build_discriminator(low_res_input, high_res_input, # TODO: What type are these?
                         num_filters_in_layer: List[int]=[16, 32, 64],
                         num_cells_in_layer: List[int]=[3, 3, 3],
-                        num_units_in_dense_layer: List[int]=[]):
+                        num_units_in_dense_layer: List[int]=[], 
+                        use_batch_norm: bool=True, 
+                        activation_in_final_layer: bool=True):
     """Builds a model which classifies high_res_input as real
        or generated (where "real" -> 1, "generated" -> 0).
     
@@ -241,19 +243,24 @@ def build_discriminator(low_res_input, high_res_input, # TODO: What type are the
     
     for i, (num_filters, num_cells) in enumerate(filters_and_cells):
         for j in range(num_cells):
-            x = unet_cell(x, num_filters=num_filters) # TODO: Rename `unet_cell`
+            x = unet_cell(x, num_filters=num_filters, batch_normalization=use_batch_norm) # TODO: Rename `unet_cell`
         x = MaxPooling2D(pool_size=2)(x)
     
     x = GlobalAveragePooling2D()(x)
     x = LeakyReLU(alpha=LEAKY_RELU_ALPHA)(x)
-    x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
+    if use_batch_norm:
+        x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
     
     for num_units in num_units_in_dense_layer:
         x = Dense(units=num_units)(x)
         x = LeakyReLU(alpha=LEAKY_RELU_ALPHA)(x)
-        x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
+        if use_batch_norm:
+            x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
     
-    validity = Dense(units=1, activation='sigmoid')(x)
+    if activation_in_final_layer:
+        validity = Dense(units=1, activation='sigmoid')(x)
+    else:
+        validity = Dense(units=1)(x)
 
     model = Model(inputs=[low_res_input, high_res_input], outputs=validity)
     return model
