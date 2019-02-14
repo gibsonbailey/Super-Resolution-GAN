@@ -15,7 +15,9 @@ from unet import unet_cell, LEAKY_RELU_ALPHA, BATCH_NORM_MOMENTUM
 def build_upscaler(inputs, # TODO: What type is this?
                    num_filters_in_layer: List[int]=[16, 32, 64],
                    num_cells_in_layer: List[int]=[3, 3, 3],
-                   bottleneck_before_concat: bool=False) -> Model:
+                   bottleneck_before_concat: bool=False, 
+                   n_channels_output=1, 
+                   activation_string='sigmoid') -> Model:
     """Build a model which upscales inputs by factor of 4 (i.e., 
        doubles the height and width of inputs)
     
@@ -99,7 +101,7 @@ def build_upscaler(inputs, # TODO: What type is this?
             x = unet_cell(x, num_filters=num_filters)
 
     # Output
-    x = unet_cell(x, num_filters=1, kernel_size=1, activation='sigmoid',
+    x = unet_cell(x, num_filters=n_channels_output, kernel_size=1, activation=activation_string,
                   batch_normalization=False)
 
     model = Model(inputs=inputs, outputs=x)
@@ -110,7 +112,8 @@ def build_upscaler_v2(inputs, output_size: Tuple[int, int],
                       align_corners: bool=True,
                       num_filters_in_layer: List[int]=[16, 32, 64, 16],
                       num_cells_in_layer: List[int]=[3, 3, 3, 4],
-                      bottleneck_before_concat: bool=True):
+                      bottleneck_before_concat: bool=True, 
+                      activation_string='sigmoid'):
     """Upscaler with encoder that contains strictly 'valid' convolutions
        and with decoder that bilinearly or bicubically resizes prior
        layers, concatenates, then applies 'same' convolution.
@@ -183,7 +186,7 @@ def build_upscaler_v2(inputs, output_size: Tuple[int, int],
 
     # Output
     n_channels = int(inputs.shape[-1])
-    x = Conv2D(n_channels, (1, 1), activation='sigmoid')(x)
+    x = Conv2D(n_channels, (1, 1), activation=activation_string)(x)
 
     return Model(inputs=inputs, outputs=x)
 

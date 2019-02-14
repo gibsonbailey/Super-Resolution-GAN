@@ -7,4 +7,4 @@ def reduce_resolution(ims):
 
     MK = M // K
     NL = N // L
-    return ims.reshape(-1, MK, K, NL, L).mean(axis=(2, 4)).reshape(O, MK, NL, P)
+    return ims.reshape(-1, MK, K, NL, L, P).mean(axis=(2, 4)).reshape(O, MK, NL, P)
