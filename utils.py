@@ -1,9 +1,9 @@
 import numpy as np
 
-def reduce_resolution(ims):
+def reduce_resolution(ims, reduction_factor=2):
     O, M, N, P = ims.shape
-    K = 2
-    L = 2
+    K = reduction_factor
+    L = reduction_factor
 
     MK = M // K
     NL = N // L
