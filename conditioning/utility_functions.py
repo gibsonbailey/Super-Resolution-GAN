@@ -44,7 +44,7 @@ def load_images(image_quantity):
 def face_check(img, bins):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    face_cascade = cv2.CascadeClassifier('C:/Users/Daniel/Anaconda3/Lib/site-packages/cv2/data/haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
 
     if len(faces) != 1:
@@ -148,7 +148,7 @@ def collect_and_save_images(source_path, dest_path, image_quantity, bins):
             prog_count += 1
             
             if(prog_count % max(1, int(image_quantity / 20)) == 0):
-                print("%f%%" % (prog_count / image_quantity))
+                print("%f%%" % (prog_count / image_quantity * 100))
             
             check = face_check(image, bins)
             detected = check[0]

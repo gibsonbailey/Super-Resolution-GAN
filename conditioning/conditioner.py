@@ -2,7 +2,6 @@ import numpy as np
 import os
 import cv2
 import math
-import matplotlib.pyplot as plt
 import string
 import random
 from utility_functions import collect_and_save_images
@@ -50,5 +49,3 @@ print("\n\n\n\n\n\n")
 image_dimensions = collect_and_save_images(source_path, destination_path, quantity, bins)
 
 print("Total number of images collected:", len(image_dimensions))
-plt.hist(image_dimensions)
-plt.show()
