@@ -15,7 +15,7 @@ def flip_channel_3(image):
 
 # Loads a number of images from the vggface2 dataset
 def load_images(image_quantity):
-    path = '../data/vggface2/test/'
+    path = '../data/vggface2/test/' # Shouldn't we use the path we loaded from the config?
 
     print("Loading %d images..." % image_quantity)
     
