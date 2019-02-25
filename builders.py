@@ -2,7 +2,7 @@ from keras.models import Model
 from keras.layers import Input, Conv2D, UpSampling2D, Conv2DTranspose
 from keras.layers import GlobalAveragePooling2D, MaxPooling2D, concatenate
 from keras.layers import LeakyReLU, BatchNormalization, Dense, Activation
-from keras.layers import Lambda, Reshape
+from keras.layers import Lambda, Reshape, Add
 
 from typing import Tuple, List # Type hints requires Python >= 3.5
 from functools import partial
@@ -10,6 +10,7 @@ import tensorflow as tf
 
 # Local imports
 from unet import unet_cell, LEAKY_RELU_ALPHA, BATCH_NORM_MOMENTUM
+from utils import SubpixelConv2D, InstanceNormalization
 
 # Create a function for constructing the upscaler (aka generator)
 def build_upscaler(inputs, # TODO: What type is this?
@@ -190,6 +191,66 @@ def build_upscaler_v2(inputs, output_size: Tuple[int, int],
 
     return Model(inputs=inputs, outputs=x)
 
+def build_upscaler_subpixelconv(inputs,
+                      num_filters_in_layer: List[int]=[16, 16*4, 16*16, 16],
+                      num_cells_in_layer: List[int]=[3, 3, 3, 4],
+                      kernel_size=3, 
+                      batch_normalization=True, 
+                      instance_normalization=False, 
+                      activation_string='tanh'):
+    """Upscaler with encoder that contains strictly 'valid' convolutions
+       and with decoder that bilinearly or bicubically resizes prior
+       layers, concatenates, then applies 'same' convolution.
+
+    # Arguments
+
+    # Returns
+    """
+
+    # Validate arguments
+    if len(num_filters_in_layer) != len(num_cells_in_layer):
+        raise ValueError("Size mismatch: len(num_filters_in_layer) must "
+                         "equal len(num_cells_in_layer) but received "
+                         "({}, {})".format(len(num_filters_in_layer), 
+                                           len(num_cells_in_layer)))
+
+    # Define valid convolution unet_cell
+    vc_cell = partial(unet_cell, padding='same', batch_normalization=batch_normalization, 
+                      instance_normalization=instance_normalization)
+
+    x = inputs
+    carry_forward_tensors = []
+
+    # Encoder
+    for i, (num_filters, num_cells) in enumerate(zip(num_filters_in_layer[:-1],
+                                                   num_cells_in_layer[:-1])):
+                                                   # Last element used post-resize layer
+        if i == 0:
+            # First layer: no downsampling applied
+            for _ in range(num_cells):
+                x = vc_cell(x, num_filters=num_filters, kernel_size=kernel_size)
+        else:
+            # Remaining layers: downsample first
+            x = vc_cell(x, num_filters=num_filters, kernel_size=kernel_size, strides=2)
+            for _ in range(num_cells - 1):
+                x = vc_cell(x, num_filters=num_filters)
+        carry_forward_tensors.append(x)
+
+    x = concatenate([SubpixelConv2D(scale=2**(i+1))(carry_forward_tensors[i]) for i in range(len(carry_forward_tensors))])
+
+    # Apply final convolutions to concatenated tensors
+    num_filters = num_filters_in_layer[-1]
+    num_cells = num_cells_in_layer[-1]
+    for _ in range(num_cells):
+        x = unet_cell(x, num_filters=num_filters, kernel_size=kernel_size, batch_normalization=batch_normalization, 
+                      instance_normalization=instance_normalization)
+
+    # Output
+    n_channels = int(inputs.shape[-1])
+    x = Conv2D(n_channels, (1, 1), activation=activation_string)(x)
+
+    return Model(inputs=inputs, outputs=x)
+
 # TODO: Test keras.applications (ResNet, Xception, etc.) as discriminators
 # Note: ResNet, Xception have *required* input dimensions larger than 
 # something on the order of 100x100...
@@ -198,7 +259,7 @@ def build_discriminator(low_res_input, high_res_input, # TODO: What type are the
                         num_filters_in_layer: List[int]=[16, 32, 64],
                         num_cells_in_layer: List[int]=[3, 3, 3],
                         num_units_in_dense_layer: List[int]=[], 
-                        use_batch_norm: bool=True, 
+                        batch_normalization: bool=True, 
                         activation_in_final_layer: bool=True):
     """Builds a model which classifies high_res_input as real
        or generated (where "real" -> 1, "generated" -> 0).
@@ -246,18 +307,18 @@ def build_discriminator(low_res_input, high_res_input, # TODO: What type are the
     
     for i, (num_filters, num_cells) in enumerate(filters_and_cells):
         for j in range(num_cells):
-            x = unet_cell(x, num_filters=num_filters, batch_normalization=use_batch_norm) # TODO: Rename `unet_cell`
+            x = unet_cell(x, num_filters=num_filters, batch_normalization=batch_normalization) # TODO: Rename `unet_cell`
         x = MaxPooling2D(pool_size=2)(x)
     
     x = GlobalAveragePooling2D()(x)
     x = LeakyReLU(alpha=LEAKY_RELU_ALPHA)(x)
-    if use_batch_norm:
+    if batch_normalization:
         x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
     
     for num_units in num_units_in_dense_layer:
         x = Dense(units=num_units)(x)
         x = LeakyReLU(alpha=LEAKY_RELU_ALPHA)(x)
-        if use_batch_norm:
+        if batch_normalization:
             x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
     
     if activation_in_final_layer:

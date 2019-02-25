@@ -1,7 +1,11 @@
 from keras.layers import Input, Conv2D, Conv2DTranspose, \
                          concatenate, LeakyReLU, \
-                         BatchNormalization, Activation
+                         BatchNormalization, Activation, \
+                         PReLU
 from keras.regularizers import Regularizer
+
+# local imports
+from utils import InstanceNormalization
 
 LEAKY_RELU_ALPHA = 0.2
 BATCH_NORM_MOMENTUM = 0.8
@@ -17,7 +21,8 @@ def unet_cell(inputs,
               kernel_initializer='glorot_uniform',
               kernel_regularizer=None,
               activation='leaky_relu',
-              batch_normalization=True,
+              batch_normalization=True, 
+              instance_normalization=False, 
               conv_first=True):
     """2D Convolution -> Batch Normalization -> Activation stack builder
 
@@ -70,6 +75,8 @@ def unet_cell(inputs,
     if isinstance(activation, str):
         if activation.lower() == 'leaky_relu':
             activation_fn = LeakyReLU(alpha=LEAKY_RELU_ALPHA)
+        elif activation.lower() == 'prelu':
+            activation_fn = PReLU()
         else:
             activation_fn = Activation(activation)
     else:
@@ -78,14 +85,18 @@ def unet_cell(inputs,
     x = inputs
     if conv_first:
         x = conv(x)
-        if batch_normalization:
-            x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
         if activation_fn is not None:
             x = activation_fn(x)
+        if batch_normalization:
+            x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
+        if instance_normalization:
+            x = InstanceNormalization()(x)
     else:
-        if batch_normalization:
-            x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
         if activation_fn is not None:
             x = activation_fn(x)
+        if batch_normalization:
+            x = BatchNormalization(momentum=BATCH_NORM_MOMENTUM)(x)
+        if instance_normalization:
+            x = InstanceNormalization()(x)
         x = conv(x)
     return x
