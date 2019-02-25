@@ -1,175 +1,213 @@
-import numpy as np
-import os
-import cv2
-import math
-import matplotlib.pyplot as plt
-import string
-import random
+import os  # used to find files and create paths
+import sys # sys.stdout used for inline printing
+import cv2 # used for reading images / face detection
+from random import choice    # ]
+from string import hexdigits # ] used to create random filenames
+from collections import namedtuple
 
 
-# Reverses the order of channel 3.
-# RGB to BGR or BGR to RGB
+classifier_file = "haarcascade_frontalface_default.xml"
+
+if classifier_file not in os.listdir():
+    msg = "Unable to find classifier file `{}`.".format(classifier_file)
+    raise FileNotFoundError(msg)
+
+# Declare Face datatype used by `face_check` function
+Face = namedtuple('Face', ['detected', 'bounding_box', 'target_size'])
+
 def flip_channel_3(image):
+    """Reverse the order of the last dimension
+
+    Can be used to convert RGB images to BGR, or vice versa.
+    """
     return image[...,::-1]
 
-
-# Loads a number of images from the vggface2 dataset
-def load_images(image_quantity):
-    path = '../data/vggface2/test/'
-
-    print("Loading %d images..." % image_quantity)
-    
-    subjects = os.listdir(path)
-
-    images = []
-    
-    for i, sub in enumerate(subjects):
-        for j, image in enumerate(os.listdir(path + sub)):
-            im = cv2.imread(path + sub + "/" + image)
-            im = im[...,::-1]
-            images.append(im)
-            
-            if(len(images) % max(1, int(image_quantity / 20)) == 0):
-                print("%f%%" % (len(images) / image_quantity))
-            
-            if(len(images) >= image_quantity):
-                images = np.array(images)
-                return images
-
-
-# Detects the faces in the photo using Haar cascade.
-# If more than one face exists, it is discarded.
-# Checks if the cropped face image will fit within the bounds of a bin.
-# Returns success_value, bounding_box_coordinates, bin_number
 def face_check(img, bins):
+    """Detects the faces in the photo using Haar cascade.
+
+    If more than one face exists, additional faces are discarded.
+    Checks if the cropped face image will fit within the bounds of a bin.
+
+    Returns: A namedtuple called Face with attributes:
+        detected: bool, 
+        bounding_box: List[int], 
+        target_size: int
+    """
+    no_face_found = Face(detected=False, bounding_box=None, target_size=None)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    face_cascade = cv2.CascadeClassifier('C:/Users/Daniel/Anaconda3/Lib/site-packages/cv2/data/haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(classifier_file)
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    # Signature: detectMultiScale(image, scaleFactor, minNeighbors)
+    # Returns list of rectanges, e.g.
+    #     [[x1, y1, h1, w1], 
+    #      [x2, y2, h2, w2]]
 
     if len(faces) != 1:
-        return (0, None, None)
-    faces = faces[0]
+        return no_face_found
+    
+    # Extract only the first face bounding box
+    face_bb = faces[0]
+    x, y, width, height = face_bb
 
+    # Check if the face fits into any bin
     for b in bins:
-        upper_bound = b[2]
-        lower_bound = b[1]
+        target_size, lower_bound, upper_bound = b
         
-        # faces = x, y, w, h
-        if(faces[2] <= upper_bound and faces[2] > lower_bound and faces[3] <= upper_bound and faces[3] > lower_bound):
-            return (1, faces, b[0])
-    
-    return (0, None, None)
+        good_width  = (width  <= upper_bound and width  > lower_bound)
+        good_height = (height <= upper_bound and height > lower_bound)
 
-
-# Adjusts the scale of the bounding box to desired height and width dimensions
-def scale_adjustment(x, y, w_c, h_c, w_d, h_d):
-    delta_h = h_d - h_c
-    delta_w = w_d - w_c
+        if(good_width and good_height):
+            return Face(detected=True, bounding_box=face_bb, target_size=target_size)
     
-    delta_y = -delta_h // 2
-    delta_x = -delta_w // 2
-    
-    y += delta_y
-    x += delta_x
-    
-    return (x, y, w_d, h_d)
+    return no_face_found
 
+# TODO: Combine `scale_adjustment` and `crop_realign` into single function
+def scale_adjustment(x, y, crop_width, crop_height, target_width, target_height):
+    """Adjusts the crop window to target height and target dimensions"""
+    delta_h = target_height - crop_height
+    delta_w = target_width - crop_width
+    
+    delta_y = delta_h // 2
+    delta_x = delta_w // 2
+    
+    y -= delta_y
+    x -= delta_x
 
-# Translates crop bounding box to eliminate overflow
-def crop_realign(x, y, w_c, h_c, w_i, h_i):
-    if(x + w_c > w_i):
-        diff = x + w_c - w_i
+    if (x < 0): x = 0
+    if (y < 0): y = 0
+    
+    return (x, y, target_width, target_height)
+
+def crop_realign(x, y, crop_width, crop_height, image_width, image_height):
+    """Translates crop window to prevent overflow"""
+    if (x + crop_width > image_width):
+        diff = x + crop_width - image_width
         x -= diff
-        
-    if(y + h_c > h_i):
-        diff = y + h_c - h_i
+
+    if (y + crop_height > image_height):
+        diff = y + crop_height - image_height
         y -= diff
     
-    if(x < 0):
-        x = 0
+    if (x < 0): x = 0
+    if (y < 0): y = 0
     
-    if(y < 0):
-        y = 0
-    
-    return (x, y, w_c, h_c)
+    return (x, y, crop_width, crop_height)
         
+def generate_random_hex_code(size):
+    """Generates a string of random hex digits (a-f, A-F, 0-9)"""
+    return "".join([choice(hexdigits) for _ in range(size)])
 
-# Generates a string of random hex digits (a-f, A-F, 0-9)
-def generate_random_hex_code(length):
-    s = string.hexdigits
-    output = ""
-    
-    for i in range(length):
-        output += s[random.randint(0, len(s) - 1)]
-
-    return output
-
-
-# Crops image given bounding box
 def crop_image(img, x, y, w, h):
-    return img[y:y+h,x:x+w,:]
+    """Crops image to specified height and width using an anchor (x,y)"""
+    return img[y:y+h, x:x+w, :]
 
+def collect_and_save_images(source_path, dest_path, num_images, bins):
+    """Looks for faces in images located within given directory.
 
-# Legacy bins creation function (NEEDS UPDATING)
-def create_bins(lower, upper, interval):
-    bins = []
-    while lower <= upper:
-        bins.append(lower)
-        lower += interval
-    return bins
-
-
-# Inspects images at a given source path.
-# Looks for faces within each image.
-# Sorts the images into the proper bin if face is detected.
-# Crops image to face bounding box.
-# Saves image to destination path.
-def collect_and_save_images(source_path, dest_path, image_quantity, bins):
-
-    print("Inspecting %d images..." % image_quantity)
-    
-    subjects = os.listdir(source_path)
-    
-    prog_count = 0
-    
-    good_images = []
+    If a face is detected, 
+        - place it into the proper bin,
+        - crop the image to the face bounding box, and
+        - save it to the destination
+    """
+    print("Attempting to collect {n} images...".format(n=num_images))
     
     # build directories
     for b in bins:
-        path = dest_path + "%dx%d" % (b[0], b[0])
+        target_size, lower_bound, upper_bound = b
+        path = os.path.join(dest_path, "{n}x{n}".format(n=target_size))
         if not os.path.exists(path):
             os.mkdir(path)
     
-    for i, sub in enumerate(subjects):
-        for j, filename in enumerate(os.listdir(source_path + sub)):
-            image = cv2.imread(source_path + sub + "/" + filename)
+    good_images = []
+    subjects = os.listdir(source_path)
+
+    for sub in sorted(subjects):
+        subject_path = os.path.join(source_path, sub)
+        image_filenames = os.listdir(subject_path)
+
+        for filename in sorted(image_filenames):
+            image_path = os.path.join(subject_path, filename)
+            image = cv2.imread(image_path)
             
-            prog_count += 1
-            
-            if(prog_count % max(1, int(image_quantity / 20)) == 0):
-                print("%f%%" % (prog_count / image_quantity))
-            
-            check = face_check(image, bins)
-            detected = check[0]
-            if(detected):
-                (x, y, w, h) = check[1]
-                desired_dimension = check[2]
+            face = face_check(image, bins)
+            # face_check returns a Face object (namedtuple)
+
+            if(face.detected):
+                (x, y, w, h) = face.bounding_box
+                ts = face.target_size
                 
                 image_width = image.shape[1]
                 image_height = image.shape[0]
                 
-                (x, y, w, h) = scale_adjustment(x, y, w, h, desired_dimension, desired_dimension)
+                (x, y, w, h) = scale_adjustment(x, y, w, h, ts, ts)
                 (x, y, w, h) = crop_realign(x, y, w, h, image_width, image_height)
                 cropped = crop_image(image, x, y, w, h)
-                good_images.append(desired_dimension)
-                if prog_count % int(image_quantity / 20) == 0:
-                    print("Image count:", len(good_images))
+                good_images.append(face.target_size)
                 
                 # save image
-                p = dest_path + "%dx%d/" % (desired_dimension, desired_dimension)
-                cv2.imwrite(p + generate_random_hex_code(12) + ".jpg", cropped)
+                image_ext  = ".png"
+                image_name = generate_random_hex_code(size=16)
+                bin_folder = "{ts}x{ts}".format(ts=face.target_size)
+                image_path = os.path.join(dest_path, bin_folder,
+                                          image_name + image_ext)
+
+                cv2.imwrite(image_path, cropped)
+
+                # Print out progress in-place
+                info_str = "[Current subject: {subj}, "\
+                           "Total progress: {n} / {m} ({p:.2f}%)]\r".format(
+                                subj=sub, n=len(good_images), m=num_images,
+                                p=len(good_images) / float(num_images) * 100)
+
+                sys.stdout.write(info_str)
+                sys.stdout.flush()
                 
-            if(prog_count >= image_quantity):
+            if(len(good_images) == num_images):
                 return good_images
 
+    print("\nUnable to find {n} images. "
+          "Returning {m} instead.".format(n=num_images, m=len(good_images)))
+    return good_images
+
+def parse_config(config_file):
+    # Verify that config_file is in current directory
+    if config_file not in os.listdir():
+        msg = "Could not find configuration file `{}`".format(config_file)
+        raise FileNotFoundError(msg)
+    
+    # Read lines from the config file; store in list
+    with open(config_file, 'r') as f:
+        config = f.readlines()
+    
+    bins = []
+    
+    for i, line in enumerate(config):
+        if (i == 0):
+            source_path = line.split(" ")[-1].strip()
+            # Note: strip() is used to remove the trailing '\n'
+        elif (i == 1):
+            destination_path = line.split(" ")[-1].strip()
+        elif (i == 2):
+            quantity = line.split(" ")[-1].strip()
+            quantity = int(quantity)
+        elif (i > 3):
+            l = line.split(", ")
+            l = list(map(int, l))
+            bins.append(l)
+    
+    # Print out parsed configuration:
+    print("="*50)
+    print("Parsed configuration file: `{}`".format(config_file))
+    print("="*50)
+    print("Source directory:", source_path)
+    print("Destination directory:", destination_path)
+    print("Image quantity:", quantity)
+    print("Bins:")
+    print("          [Target, Minimum, Maximum]")
+    print("         ----------------------------")
+    for b in bins:
+        print("          [{:6d}, {:7d}, {:7d}]".format(*b))
+    print("="*50 + "\n")
+
+    return source_path, destination_path, quantity, bins
